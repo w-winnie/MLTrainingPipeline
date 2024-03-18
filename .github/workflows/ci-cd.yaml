@@ -1,0 +1,53 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      
+    - name: Build Docker image
+      run: docker build -t myapp .
+
+  push-artifact:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 'Google auth'
+      id: 'auth'
+      uses: 'google-github-actions/auth@v1'
+      with:
+        credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+    - name: Log in to GCP Artifact Registry
+      run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
+    - name: Tag Docker image
+      run: docker tag myapp us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_NAME }}/ml-project-template/myapp:dev
+
+    - name: Push Docker image
+      run: docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_NAME }}/ml-project-template/myapp:dev
+
+  deploy-vertex-ai:
+    needs: push-artifact
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      
+    - name: Create Vertex AI custom job
+      run: |
+        gcloud ai custom-jobs create \
+          --region=us-central1 \
+          --display-name=training_test_cli3 \
+          --worker-pool-spec=machine-type=n1-standard-4,replica-count=1,container-image-uri=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_NAME }}/ml-project-template/myapp:dev \
+          --args="--input_data_path=gs://ml-project-template/input_data/sample_data.csv --output_data_path=gs://ml-project-template/output_data/test_out --model_path=gs://ml-project-template/model --run_env=gcs"

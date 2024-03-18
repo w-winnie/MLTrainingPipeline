@@ -1,0 +1,1 @@
+# global constants if needed for the pipeline or execution

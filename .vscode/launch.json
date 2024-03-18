@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: run.py with Arguments",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/run.py",
+            "console": "integratedTerminal",
+            // "pythonPath": "path/to/your/venv/bin/python",
+            "args": [
+                "--input_data_path", "./local/sample_data.csv",
+                "--output_data_path", "./local/output_sample_data.csv",
+                "--model_path", "./local/models/",
+                "--run_env", "local"
+            ]
+        }
+    ]
+}
